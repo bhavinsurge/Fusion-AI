@@ -1,58 +1,89 @@
-// src/app/page.tsx
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Sidebar from '@/components/Sidebar';
 import ChatArea from '@/components/Chat/ChatArea';
 import InputArea from '@/components/Chat/InputArea';
 import UpgradeTab from '@/components/UI/UpgradeTab';
+import {
+  AuthUser,
+  ConversationSummary,
+  clearConversations,
+  clearSession,
+  getConversation,
+  getStoredUser,
+  isAuthenticated,
+  listConversations,
+  sendChat,
+} from '@/lib/api';
 
 type Message = {
   role: 'user' | 'ai';
   text: string;
+  selectedBy?: string | null;
 };
 
 export default function ChatPage() {
-  // Initialized with empty array - no mock data
+  const router = useRouter();
+  const [ready, setReady] = useState(false);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  // Initialized with empty array - no mock data for sidebar
-  const [conversations, setConversations] = useState<string[]>([]);
+  const [conversations, setConversations] = useState<ConversationSummary[]>([]);
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(
+    null,
+  );
 
-  const sendMessage = async () => {
-    if (!input.trim()) return;
-
-    // Optimistic user message
-    const userMessage: Message = { role: 'user', text: input };
-    setMessages((prev) => [...prev, userMessage]);
-
-    // Add to sidebar if it's the first message of a new chat (simple logic for now)
-    if (messages.length === 0) {
-      setConversations((prev) => [input.substring(0, 20) + '...', ...prev]);
+  useEffect(() => {
+    if (!isAuthenticated()) {
+      router.replace('/login');
+      return;
     }
 
+    setUser(getStoredUser());
+    void refreshConversations().finally(() => setReady(true));
+  }, [router]);
+
+  const refreshConversations = async () => {
+    const items = await listConversations();
+    setConversations(items);
+  };
+
+  const sendMessage = async () => {
+    if (!input.trim() || loading) return;
+
+    const prompt = input.trim();
+    const userMessage: Message = { role: 'user', text: prompt };
+    setMessages((prev) => [...prev, userMessage]);
     setInput('');
     setLoading(true);
 
     try {
-      // Keep existing fetch logic, but if it fails (no backend), fallback to eco behavior or graceful error
-      // The user asked to fix the layout, so I won't delete the logic entirely, but will ensure it doesn't break the UI
-      const res = await fetch(`http://localhost:3333/chat?q=${encodeURIComponent(input)}`);
-
-      if (!res.ok) {
-        throw new Error('Network response was not ok');
+      const data = await sendChat(prompt, activeConversationId);
+      setActiveConversationId(data.conversationId);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'ai',
+          text: data.answer,
+          selectedBy: data.selectedBy,
+        },
+      ]);
+      await refreshConversations();
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Could not reach the server.';
+      if (message.toLowerCase().includes('unauthorized') || message === 'Not authenticated') {
+        clearSession();
+        router.replace('/login');
+        return;
       }
-
-      const data = await res.json();
-      setMessages((prev) => [...prev, { role: 'ai', text: data.answer }]);
-    } catch {
-      // Fallback for demo/visual purposes if backend is missing
-      // But user said "do not use any single mock data". 
-      // If I reply with a hardcoded string here, is it mock data? 
-      // Technically yes. I should probably just show an error or a generic "Server not reachable" 
-      // but strictly speaking, "Server not reachable" IS the real state if the server is down.
-      setMessages((prev) => [...prev, { role: 'ai', text: 'Error: Could not reach the server.' }]);
+      setMessages((prev) => [
+        ...prev,
+        { role: 'ai', text: `Error: ${message}` },
+      ]);
     } finally {
       setLoading(false);
     }
@@ -61,14 +92,57 @@ export default function ChatPage() {
   const handleNewChat = () => {
     setMessages([]);
     setInput('');
+    setActiveConversationId(null);
   };
+
+  const handleSelectConversation = async (id: string) => {
+    try {
+      const conversation = await getConversation(id);
+      setActiveConversationId(conversation.id);
+      setMessages(
+        conversation.messages.map((m) => ({
+          role: m.role,
+          text: m.content,
+          selectedBy: m.selectedBy,
+        })),
+      );
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Failed to load conversation';
+      setMessages([{ role: 'ai', text: `Error: ${message}` }]);
+    }
+  };
+
+  const handleClearAll = async () => {
+    await clearConversations();
+    setConversations([]);
+    handleNewChat();
+  };
+
+  const handleLogout = () => {
+    clearSession();
+    router.replace('/login');
+  };
+
+  if (!ready) {
+    return (
+      <div className="h-screen bg-[#FEFBEB] flex items-center justify-center text-gray-500">
+        Loading...
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-[#FEFBEB] font-sans overflow-hidden items-center justify-center">
       <div className="flex w-full h-full relative">
         <Sidebar
           conversations={conversations}
+          activeConversationId={activeConversationId}
           onNewChat={handleNewChat}
+          onSelectConversation={handleSelectConversation}
+          onClearAll={handleClearAll}
+          onLogout={handleLogout}
+          userName={user?.name || user?.email || 'User'}
         />
 
         <main className="flex-1 flex flex-col relative w-full h-full">

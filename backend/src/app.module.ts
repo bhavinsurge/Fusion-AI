@@ -1,23 +1,15 @@
-// import { Module } from '@nestjs/common';
-// import { AppController } from './app.controller';
-// import { AppService } from './app.service';
-
-// @Module({
-//   imports: [],
-//   controllers: [AppController],
-//   providers: [AppService],
-// })
-// export class AppModule {}
-
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { LlmModule } from './llm/llm.module';
-import { FilterModule } from './filter/filter.module';
-import { JudgeModule } from './judge/judge.module';
+import { ConfigModule } from '@nestjs/config';
+import { AuthModule } from './auth/auth.module';
+import { ChatModule } from './chat/chat.module';
+import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
-  imports: [LlmModule, FilterModule, JudgeModule],
-  controllers: [AppController],
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    PrismaModule,
+    AuthModule,
+    ChatModule,
+  ],
 })
 export class AppModule {}
-  

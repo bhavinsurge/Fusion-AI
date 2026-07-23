@@ -7,6 +7,7 @@ import MessageBubble from './MessageBubble';
 interface Message {
     role: 'user' | 'ai';
     text: string;
+    selectedBy?: string | null;
 }
 
 interface ChatAreaProps {
@@ -24,7 +25,12 @@ export default function ChatArea({ messages }: ChatAreaProps) {
         <div className="flex-1 overflow-y-auto pt-8 pb-48 px-4 md:px-20 scroll-smooth">
             <div className="max-w-3xl mx-auto space-y-8">
                 {messages.map((msg, i) => (
-                    <MessageBubble key={i} role={msg.role} text={msg.text} />
+                    <MessageBubble
+                        key={i}
+                        role={msg.role}
+                        text={msg.text}
+                        selectedBy={msg.selectedBy}
+                    />
                 ))}
                 {messages.length === 0 && (
                     <div className="flex flex-col items-center justify-center h-full text-gray-400 mt-20">

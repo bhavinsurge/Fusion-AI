@@ -8,8 +8,9 @@
 
 - **Multi-LLM Support**: Interaction with various Large Language Models.
 - **AI Decision Making**: Intelligent routing and response generation.
+- **Auth (JWT)**: Register / login with bcrypt-hashed passwords.
+- **Per-user chats**: Conversations and messages stored in PostgreSQL (UUID + timestamps).
 - **Modern UI**: Sleek, responsive chat interface designed with Tailwind CSS v4.
-- **Real-time Interaction**: Seamless communication between frontend and backend.
 - **Modular Architecture**: Clean separation of concerns between client and server.
 
 ---
@@ -40,10 +41,14 @@ The Fusion AI system follows a sophisticated pipeline to deliver the highest qua
 ### Backend (`/backend`)
 - **Framework**: [NestJS 11](https://nestjs.com/)
 - **Language**: [TypeScript](https://www.typescriptlang.org/)
+- **ORM / DB**: Prisma + PostgreSQL
+- **Auth**: JWT (`passport-jwt`) + bcrypt
 - **HTTP Client**: Axios
-- **Reactive Extensions**: RxJS
-- **Testing**: Jest
 - **Package Manager**: Yarn (recommended) or NPM
+
+### Infra
+- **Docker Compose**: local PostgreSQL (`docker-compose.yml`)
+- **Ollama**: local LLM runtime
 
 ---
 
@@ -53,8 +58,9 @@ The project is organized into two main distinct directories:
 
 ```
 fusion-ai/
-├── frontend/    # Next.js Frontend Application
-└── backend/     # NestJS Backend Service
+├── frontend/           # Next.js Frontend Application
+├── backend/            # NestJS Backend Service
+└── docker-compose.yml  # PostgreSQL
 ```
 
 ---
@@ -81,25 +87,39 @@ ollama pull gemma
 
 ---
 
+## 🐘 PostgreSQL Setup
+
+From the project root, create a `.env` (see `backend/.env.example` for `POSTGRES_*` keys), then:
+
+```bash
+docker compose up -d
+```
+
+This starts **PostgreSQL 18** on `localhost:5432`. Default local values (override via root `.env`):
+- user: `postgres`
+- database: `Fusion_AI` (underscore form of “Fusion AI”; spaces break connection URLs)
+- Set `POSTGRES_PASSWORD` in the root `.env` and matching URL-encoded password in `backend/.env` `DATABASE_URL`
+
+---
+
 ## ⚡ Setup & Installation
 
-To run the Fusion AI project locally, you will need to set up and run both the frontend and backend services concurrently.
+To run the Fusion AI project locally, you will need Postgres, Ollama, backend, and frontend.
 
 ### 1. Prerequisites
 - **Node.js**: v18 or higher
-- **NPM** (for frontend) and **Yarn** (recommended for backend)
+- **Docker** (for PostgreSQL)
+- **Ollama** with models pulled
+- **Yarn** (backend) and **NPM** or Yarn (frontend)
 
 ### 2. Backend Setup
 The backend runs on port `3333`.
 
 ```bash
-# Navigate to the backend directory
 cd backend
-
-# Install dependencies
-yarn install  # or npm install
-
-# Start the development server
+cp .env.example .env
+yarn install
+npx prisma migrate dev
 yarn run start:dev
 ```
 *The backend server will start at `http://localhost:3333`.*
@@ -107,29 +127,28 @@ yarn run start:dev
 ### 3. Frontend Setup
 The frontend runs on port `3000` and connects to the backend.
 
-Open a new terminal window:
-
 ```bash
-# Navigate to the frontend directory
 cd frontend
-
-# Install dependencies
-npm install
-
-# Start the development server
+cp .env.example .env.local   # optional
+npm install                  # or yarn
 npm run dev
 ```
-*The frontend application will run at `http://localhost:3000`.*
+*Open `http://localhost:3000`, register an account, then chat.*
 
----
+### API overview
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/auth/register` | No | Create account |
+| POST | `/auth/login` | No | Login, returns JWT |
+| GET | `/auth/me` | JWT | Current user |
+| POST | `/chat` | JWT | Run multi-LLM pipeline + save messages |
+| GET | `/conversations` | JWT | List user conversations |
+| GET | `/conversations/:id` | JWT | Conversation + messages |
+| DELETE | `/conversations` | JWT | Clear all chats |
+| DELETE | `/conversations/:id` | JWT | Delete one chat |
 
-## 📖 Usage
-
-1. Ensure both backend and frontend servers are running.
-2. Open your browser and navigate to `http://localhost:3000`.
-3. Use the chat interface to interact with the AI.
-4. The frontend communicates with the backend API at `http://localhost:3333`.
-
+`POST /chat` body: `{ "message": "...", "conversationId?: "uuid" }`  
+Response still includes `answer` + `selectedBy` (same LLM logic), plus `conversationId`.
 ---
 
 ## 🔧 Commands

@@ -1,0 +1,61 @@
+# Dependencies
+node_modules/
+
+# Environment / secrets (never commit)
+# Keep .env.example tracked
+.env
+.env.local
+.env.development
+.env.development.local
+.env.test
+.env.test.local
+.env.production
+.env.production.local
+
+# Builds / caches
+dist/
+build/
+out/
+.next/
+coverage/
+*.tsbuildinfo
+.turbo/
+.cache/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE / editors
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+*.swp
+*.swo
+
+# Prisma generated client
+backend/src/generated/
+**/generated/prisma/
+
+# Agent / editor skill caches (local tooling)
+.cursor/
+backend/.agents/
+backend/.claude/
+backend/.windsurf/
+
+# Misc
+.temp/
+.tmp/
+*.pem
+.vercel/

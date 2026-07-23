@@ -4,9 +4,10 @@ import { Copy, Repeat2, ThumbsDown, ThumbsUp } from 'lucide-react';
 interface MessageBubbleProps {
     role: 'user' | 'ai';
     text: string;
+    selectedBy?: string | null;
 }
 
-export default function MessageBubble({ role, text }: MessageBubbleProps) {
+export default function MessageBubble({ role, text, selectedBy }: MessageBubbleProps) {
     const isUser = role === 'user';
 
     return (
@@ -21,7 +22,14 @@ export default function MessageBubble({ role, text }: MessageBubbleProps) {
                             </svg>
                         </div>
                     ) : (
-                        <span className="text-sm font-bold text-gray-900 bg-white px-2 py-1 rounded">Fusion AI <span className="text-blue-500 font-normal">✓</span></span>
+                        <span className="text-sm font-bold text-gray-900 bg-white px-2 py-1 rounded">
+                            Fusion AI <span className="text-blue-500 font-normal">✓</span>
+                            {selectedBy ? (
+                                <span className="ml-2 text-xs font-normal text-gray-500">
+                                    via {selectedBy}
+                                </span>
+                            ) : null}
+                        </span>
                     )}
                 </div>
                 <button className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400">

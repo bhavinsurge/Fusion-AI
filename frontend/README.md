@@ -65,19 +65,21 @@ src/
 
 ## 🔌 API Integration
 
-The frontend is currently configured to send chat requests to a local backend service.
+Auth is required. After login/register, the frontend stores a JWT and sends:
 
-- **Endpoint**: `GET http://localhost:3333/chat`
-- **Query Param**: `?q=<user_input>`
-- **Expected Response**:
-  ```json
-  {
-    "answer": "AI response text...",
-    "selectedBy": "Model Name (optional)"
-  }
-  ```
+`Authorization: Bearer <token>`
 
-> **Note**: If the backend is not running, the frontend will handle the error gracefully or you can mock the response in `src/app/page.tsx`.
+- **Chat**: `POST http://localhost:3333/chat` with `{ "message": "...", "conversationId?": "uuid" }`
+- **Conversations**: `GET /conversations`, `GET /conversations/:id`
+
+Expected chat response:
+```json
+{
+  "conversationId": "uuid",
+  "answer": "AI response text...",
+  "selectedBy": "mistral"
+}
+```
 
 ## 📜 Scripts
 
