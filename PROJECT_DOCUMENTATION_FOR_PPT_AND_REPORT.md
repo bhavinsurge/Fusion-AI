@@ -1,8 +1,9 @@
 # Fusion AI — Project Documentation for PPT and Detailed Report
 
 > **Purpose of this document:** Single source of truth for preparing a college project presentation (PPT) and a detailed project report (PDF).  
-> **Source of truth:** The Fusion-AI repository in this workspace (`frontend/`, `backend/`, `docker-compose.yml`, root `README.md`).  
-> **Accuracy rule:** Confirmed facts are labeled as such. Inferred problem/need language is labeled. Unverified items are listed under Missing Information. Secrets and real credentials are excluded.
+> **Source of truth:** The Fusion-AI repository in this workspace (`web-client/`, `api-server/`, `docker-compose.yml`, root `README.md`, `.gitignore`).  
+> **Accuracy rule:** Confirmed facts are labeled as such. Inferred problem/need language is labeled. Unverified items are listed under Missing Information. Secrets and real credentials are excluded.  
+> **Doc update note:** Updated after JWT auth + Prisma chat persistence, PostgreSQL **18** Docker setup (`Fusion_AI` database), root/web-client `.gitignore` policy (track `.env.example`, ignore real `.env`), and related README/env example changes.
 
 ---
 
@@ -18,11 +19,11 @@
 | **Target Users** | End users who register/login and chat; intended for personal/local demonstration use (college project / prototype). |
 | **Frontend Technology** | Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS v4, Lucide React |
 | **Backend Technology** | NestJS 11, TypeScript, Axios, Passport JWT, bcrypt, class-validator |
-| **Database** | PostgreSQL 16 (Docker), Prisma ORM 7 |
+| **Database** | PostgreSQL 18 (Docker `postgres:18-alpine`), database `Fusion_AI`, Prisma ORM 7 |
 | **Programming Languages** | TypeScript (primary), SQL (Prisma migrations) |
 | **Frameworks** | Next.js, NestJS, Prisma |
 | **Major Libraries** | Axios, Passport JWT, bcrypt, class-validator, class-transformer, Lucide React, `@prisma/adapter-pg`, `pg` |
-| **Cloud / Infrastructure** | Local Docker Compose for PostgreSQL only. Production cloud hosting: **Not confirmed**. |
+| **Cloud / Infrastructure** | Local Docker Compose for PostgreSQL 18 only (root `.env` supplies `POSTGRES_*`). Production cloud hosting: **Not confirmed**. |
 | **APIs / Integrations** | Ollama local HTTP API (`/api/generate`); REST API between frontend and backend |
 | **Authentication / Security** | JWT Bearer tokens, bcrypt password hashing, CORS, DTO validation, conversation ownership checks |
 | **Analytics / Monitoring** | **Not confirmed** (no analytics SDK found) |
@@ -39,7 +40,7 @@
 Fusion AI is a Multi-LLM chatbot. One user prompt is sent to multiple local models (Mistral, Gemma). An AI judge (Llama 3 8B) picks the best answer. Users authenticate with JWT, and chats are saved in PostgreSQL.
 
 **Report Version:**  
-Fusion AI is a full-stack conversational AI system with a clear separation between a Next.js frontend and a NestJS backend. Its distinguishing idea is **ensemble-style answer selection**: instead of trusting a single model, the backend queries multiple Ollama-hosted LLMs in parallel, filters empty responses, and asks a dedicated judge model to return the best answer index in JSON. Authenticated users get per-user conversation history persisted in PostgreSQL through Prisma. The current repository is a working local prototype (git commit message: `Prototype-version`), with Dockerized Postgres and documented Ollama model setup. Several UI elements (Upgrade to Pro, thumbs, regenerate, search) are present visually but are not wired to backend behavior.
+Fusion AI is a full-stack conversational AI system with a clear separation between a Next.js frontend and a NestJS backend. Its distinguishing idea is **ensemble-style answer selection**: instead of trusting a single model, the backend queries multiple Ollama-hosted LLMs in parallel, filters empty responses, and asks a dedicated judge model to return the best answer index in JSON. Authenticated users get per-user conversation history persisted in PostgreSQL through Prisma. The current repository is a working local prototype, with Dockerized **PostgreSQL 18** (database name `Fusion_AI`), tracked `.env.example` templates, a root `.gitignore` that excludes real secrets, and documented Ollama model setup. Several UI elements (Upgrade to Pro, thumbs, regenerate, search) are present visually but are not wired to backend behavior.
 
 ---
 
@@ -55,7 +56,7 @@ Large Language Models (LLMs) have become central to conversational applications,
 
 Fusion AI addresses this need by implementing a Multi-LLM chat pipeline with an AI judge. The user interacts through a web chat interface. After authentication, a prompt is sent to the NestJS backend. The LLM service queries configured Ollama models (`mistral` and `gemma`) in parallel. Empty or invalid responses are discarded. Remaining answers are passed to a judge service that prompts `llama3:8b` to return a JSON object containing `best_answer_index`. The selected answer and the winning model name are returned to the client and stored as conversation messages.
 
-Beyond the AI pipeline, Fusion AI includes standard application concerns required for a usable product prototype: user accounts (email/password with bcrypt hashing), JWT-based protected APIs, conversation listing and retrieval, and cascade-safe relational storage of users, conversations, and messages. Local infrastructure is documented clearly: PostgreSQL via Docker Compose, Ollama for local model inference, frontend on port 3000, and backend on port 3333.
+Beyond the AI pipeline, Fusion AI includes standard application concerns required for a usable product prototype: user accounts (email/password with bcrypt hashing), JWT-based protected APIs, conversation listing and retrieval, and cascade-safe relational storage of users, conversations, and messages. Local infrastructure is documented clearly: **PostgreSQL 18** via Docker Compose (database `Fusion_AI`), Ollama for local model inference, frontend on port 3000, and backend on port 3333.
 
 From an academic perspective, the project is significant because it combines several contemporary software engineering themes—full-stack TypeScript, modular NestJS services, ORM-based persistence, REST APIs, and local LLM orchestration—into one coherent system. From a user perspective, the value is a chat experience that can surface not only an answer, but also which model produced the selected response (`selectedBy` / “via {model}” in the UI).
 
@@ -79,7 +80,7 @@ Single-model chatbots may produce uneven answer quality because each Large Langu
 
 The system consists of a Next.js (App Router) frontend and a NestJS backend, both written in TypeScript. Users register and log in using email and password; passwords are hashed with bcrypt, and authenticated sessions use JWT Bearer tokens stored in the browser. Chat and conversation APIs are protected by a JWT guard. When a user sends a message, the backend creates or reuses a conversation, stores the user message, queries multiple Ollama models (`mistral`, `gemma`) concurrently via HTTP, filters empty answers, and asks a judge model (`llama3:8b`) to return a JSON index of the best response. The selected answer and the originating model name are saved and returned to the UI.
 
-Data persistence is implemented with Prisma and PostgreSQL. The schema includes User, Conversation, and Message entities with cascade deletes and indexes for efficient listing and message retrieval. Local PostgreSQL is provided through Docker Compose. The application does not currently show confirmed production cloud deployment, analytics, payment systems, or background job queues. Automated tests present in the backend appear to be NestJS starter leftovers and are not aligned with the current Auth/Chat architecture.
+Data persistence is implemented with Prisma and PostgreSQL 18 (`Fusion_AI`). The schema includes User, Conversation, and Message entities with cascade deletes and indexes for efficient listing and message retrieval. Local PostgreSQL is provided through Docker Compose with environment-driven `POSTGRES_*` settings. The application does not currently show confirmed production cloud deployment, analytics, payment systems, or background job queues. Automated tests present in the backend appear to be NestJS starter leftovers and are not aligned with the current Auth/Chat architecture.
 
 Overall, Fusion AI demonstrates a practical architecture for Multi-LLM response fusion, secure per-user chat history, and modular service design suitable for academic presentation and further enhancement.
 
@@ -143,7 +144,8 @@ Build a Multi-LLM chatbot that selects the best answer using an AI judge and pre
 - Conversation create/list/get/clear-all
 - Backend endpoint to delete a single conversation (API exists)
 - Message persistence with optional `selectedBy` model name
-- Local PostgreSQL via Docker Compose
+- Local PostgreSQL 18 via Docker Compose (`Fusion_AI`)
+- Tracked `.env.example` templates; real env files gitignored
 - CORS configuration for frontend origin
 - Request DTO validation (class-validator)
 
@@ -202,7 +204,7 @@ Detailed end-to-end use cases are in Section 20.
 
 | Technology | What it is | Where used | Why useful | Dependent features |
 |------------|------------|------------|------------|--------------------|
-| Next.js 16 | React meta-framework (App Router) | `frontend/` | Routing, SSR/CSR app structure | Pages: `/`, `/login`, `/register` |
+| Next.js 16 | React meta-framework (App Router) | `web-client/` | Routing, SSR/CSR app structure | Pages: `/`, `/login`, `/register` |
 | React 19 | UI library | Components + pages | Component UI | Chat UI |
 | Tailwind CSS v4 | Utility CSS | `globals.css`, components | Rapid styling | Layout/visual design |
 | Lucide React | Icon set | `MessageBubble.tsx` | Lightweight icons | Feedback/regenerate UI icons |
@@ -218,7 +220,7 @@ Detailed end-to-end use cases are in Section 20.
 
 | Technology | What it is | Where used | Why useful | Dependent features |
 |------------|------------|------------|------------|--------------------|
-| NestJS 11 | Node.js backend framework | `backend/src` | Modular controllers/services | Auth, Chat APIs |
+| NestJS 11 | Node.js backend framework | `api-server/src` | Modular controllers/services | Auth, Chat APIs |
 | Node.js / Express (via Nest platform) | Runtime / HTTP adapter | Nest default | Host REST API | All APIs |
 | Axios | HTTP client | `llm.service.ts`, `judge.service.ts` | Call Ollama | Multi-LLM + judge |
 | class-validator / class-transformer | DTO validation | Auth/Chat DTOs + ValidationPipe | Input safety | Register/login/chat payloads |
@@ -228,15 +230,17 @@ Detailed end-to-end use cases are in Section 20.
 
 | Technology | What it is | Where used | Why useful | Dependent features |
 |------------|------------|------------|------------|--------------------|
-| PostgreSQL 16 | Relational DB | Docker Compose | Durable structured storage | Users, chats, messages |
-| Prisma 7 | ORM | schema, PrismaService | Type-safe DB access | All persistence |
+| PostgreSQL 18 | Relational DB | Docker Compose (`postgres:18-alpine`) | Durable structured storage | Users, chats, messages |
+| Database `Fusion_AI` | App database name | Created via `POSTGRES_DB` | Isolates project data | All Prisma models |
+| Prisma 7 | ORM | schema, `prisma.config.ts`, PrismaService | Type-safe DB access; URL in config (not in schema) | All persistence |
 | `@prisma/adapter-pg` + `pg` | Driver adapter | `prisma.service.ts` | Prisma 7 PostgreSQL connectivity | DB connection |
 
 ## Cloud / Infrastructure
 
 | Technology | Status |
 |------------|--------|
-| Docker Compose | Confirmed for local Postgres |
+| Docker Compose | Confirmed for local Postgres 18; volume mount `/var/lib/postgresql` (PG18 requirement) |
+| Root `.env` for Compose | Confirmed pattern: `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` |
 | Object storage / CDN / Lambda / queues | **Not confirmed** |
 | Kubernetes / Terraform | **Not confirmed** |
 
@@ -277,7 +281,7 @@ Detailed end-to-end use cases are in Section 20.
 - Yarn (backend recommended), NPM (frontend README)
 
 ## Version Control
-Git (repository present; sample commit: `Prototype-version`).
+Git (repository present). Root `.gitignore` plus `web-client/.gitignore` and `api-server/.gitignore` ignore real `.env` files while allowing `.env.example` to be committed.
 
 ## Deployment / Hosting
 Local only confirmed. Nest README mentions Mau deployment generically; **not project-specific deployment evidence**.
@@ -337,7 +341,7 @@ flowchart LR
   User[User / Browser]
   FE[Next.js Frontend<br/>:3000]
   BE[NestJS Backend<br/>:3333]
-  DB[(PostgreSQL<br/>Docker)]
+  DB[(PostgreSQL 18<br/>Fusion_AI)]
   OLLAMA[Ollama<br/>:11434]
 
   User --> FE
@@ -424,7 +428,7 @@ sequenceDiagram
 
 # 12. Project Modules
 
-## Module 1: Authentication (`backend/src/auth`, `frontend` login/register)
+## Module 1: Authentication (`api-server/src/auth`, `web-client` login/register)
 
 - **Purpose:** Account creation, login, identity for protected APIs  
 - **Responsibilities:** Register, login, `/auth/me`, JWT issue/validate  
@@ -432,7 +436,7 @@ sequenceDiagram
 - **Data:** User (email, passwordHash, name)  
 - **Connections:** Required by Chat module via JwtAuthGuard  
 
-## Module 2: Chat Orchestration (`backend/src/chat`)
+## Module 2: Chat Orchestration (`api-server/src/chat`)
 
 - **Purpose:** Run Multi-LLM + judge pipeline and persist messages  
 - **Responsibilities:** Conversation resolve, chat execution, response shaping  
@@ -447,18 +451,18 @@ sequenceDiagram
 - **Frontend:** Sidebar list, select, clear all  
 - **Note:** Single-conversation delete API exists; frontend delete-one UI **not confirmed**  
 
-## Module 4: LLM Service (`backend/src/llm`)
+## Module 4: LLM Service (`api-server/src/llm`)
 
 - **Purpose:** Query responder models in parallel  
 - **Models:** `mistral`, `gemma` (deepseek commented out)  
 - **Failure handling:** Returns `{ answer: null, error }` on failure  
 
-## Module 5: Judge Service (`backend/src/judge`)
+## Module 5: Judge Service (`api-server/src/judge`)
 
 - **Purpose:** Choose best answer index via `llama3:8b`  
 - **Output parsing:** `safeJsonParse` extracts JSON; defaults to index 0 on failure  
 
-## Module 6: Data Access (`backend/src/prisma` + `prisma/`)
+## Module 6: Data Access (`api-server/src/prisma` + `prisma/`)
 
 - **Purpose:** Database connectivity and schema  
 - **Entities:** User, Conversation, Message  
@@ -485,13 +489,13 @@ sequenceDiagram
 - **Why useful:** Diversifies candidate answers  
 - **Who:** Authenticated users  
 - **How:** `LlmService.askAll` + `Promise.all`  
-- **Evidence:** `backend/src/llm/llm.service.ts`, `chat.service.ts`  
+- **Evidence:** `api-server/src/llm/llm.service.ts`, `chat.service.ts`  
 - **Best for screenshots/diagrams:** Architecture + chat with “via mistral/gemma”
 
 ### AI Judge Selection
 - **What:** Judge model returns best answer index as JSON  
 - **Why useful:** Automates selection using factuality/hallucination rules in prompt  
-- **Evidence:** `backend/src/judge/judge.service.ts`  
+- **Evidence:** `api-server/src/judge/judge.service.ts`  
 - **Best for:** Workflow/sequence diagrams, viva explanation
 
 ### Winning Model Display
@@ -562,9 +566,9 @@ JWT guards, bcrypt, validation pipe, CORS, ownership checks (`ForbiddenException
 
 ## Framework and Structure
 
-- Next.js App Router under `frontend/src/app`
+- Next.js App Router under `web-client/src/app`
 - Client components for interactive pages (`'use client'`)
-- API helper: `frontend/src/lib/api.ts`
+- API helper: `web-client/src/lib/api.ts`
 
 ## Routing / Pages
 
@@ -682,7 +686,7 @@ Nest HTTP exceptions (`Conflict`, `Unauthorized`, `NotFound`, `Forbidden`); chat
 
 ## Technology
 
-PostgreSQL + Prisma schema (`backend/prisma/schema.prisma`) + migration `20260722191842_init_auth_and_chats`.
+PostgreSQL **18** + Prisma schema (`api-server/prisma/schema.prisma`) + migration `20260722191842_init_auth_and_chats`, database **`Fusion_AI`**. Connection URL is supplied through `api-server/prisma.config.ts` + `DATABASE_URL`.
 
 ## Entities
 
@@ -794,7 +798,7 @@ erDiagram
 | Conversation ownership checks | Forbidden/NotFound in chat/conversations services |
 | Input validation | DTOs + ValidationPipe |
 | CORS origin restriction | `FRONTEND_URL` |
-| Secrets via environment | `.env.example` lists `JWT_SECRET`, `DATABASE_URL`, etc. |
+| Secrets via environment | `.env.example` documents keys (`DATABASE_URL`, `JWT_*`, `POSTGRES_*`, etc.); real `.env` / `.env.local` are gitignored |
 
 ## Not Confirmed
 
@@ -808,7 +812,7 @@ erDiagram
 
 ## Secret Handling Note
 
-Do **not** commit real `.env` values. Use `.env.example` variable names only in reports. This documentation intentionally omits any secret values.
+Do **not** commit real `.env` / `.env.local` values. Commit only `.env.example` templates. In reports and PPT slides, list **variable names** and setup steps — do not paste live passwords or JWT secrets. If a local sample password appears in `.env.example` for demo convenience, treat it as a local-dev placeholder, not a production secret.
 
 ---
 
@@ -966,15 +970,35 @@ No other external SaaS integrations confirmed.
 
 | Component | How to run | Port / Notes |
 |-----------|------------|--------------|
-| PostgreSQL | `docker compose up -d` | 5432; db `fusion_ai`; user/pass documented in README for local demo |
-| Backend | `yarn start:dev` in `backend/` | 3333 |
-| Frontend | `npm run dev` in `frontend/` | 3000 |
+| PostgreSQL 18 | From repo root: create root `.env` with `POSTGRES_*`, then `docker compose up -d` | `localhost:5432`; image `postgres:18-alpine`; DB `Fusion_AI`; user typically `postgres`; volume `fusion_ai_pg18_data` mounted at `/var/lib/postgresql` (required for PG 18+) |
+| Backend | `cp .env.example .env` → `yarn install` → `npx prisma migrate dev` (or `migrate deploy`) → `yarn start:dev` in `api-server/` | 3333; `DATABASE_URL` must match Compose DB; special characters in passwords must be **URL-encoded** (e.g. `@` → `%40`) |
+| Frontend | `cp .env.example .env.local` (optional) → `npm run dev` in `web-client/` | 3000; `NEXT_PUBLIC_API_URL` defaults to `http://localhost:3333` |
 | Ollama | Local install + model pulls | 11434 |
 
-## Environment Variable Names (from `.env.example` only)
+## Why the database is named `Fusion_AI`
+The intended product name is “Fusion AI”. A space in the PostgreSQL database name complicates connection URLs and tooling, so the implemented name is **`Fusion_AI`** (underscore). Documented in `docker-compose.yml` and README.
 
-**Backend:** `DATABASE_URL`, `JWT_SECRET`, `JWT_EXPIRES_IN`, `PORT`, `FRONTEND_URL`  
-**Frontend:** `NEXT_PUBLIC_API_URL`
+## Prisma 7 connection configuration
+- `schema.prisma` declares `provider = "postgresql"` only (no `url` in schema).  
+- Connection URL comes from `DATABASE_URL` via `api-server/prisma.config.ts`.  
+- Runtime client uses `@prisma/adapter-pg` in `PrismaService`.
+
+## Environment Variable Names (from `.env.example` files)
+
+**Backend (`api-server/.env.example`):**  
+`DATABASE_URL`, `JWT_SECRET`, `JWT_EXPIRES_IN`, `PORT`, `FRONTEND_URL`, plus Compose-related keys `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` (also used when documenting root Compose `.env`).
+
+**Frontend (`web-client/.env.example`):**  
+`NEXT_PUBLIC_API_URL`
+
+**Root Compose `.env` (local, gitignored):**  
+`POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` — required for `docker compose` variable substitution.
+
+## Git ignore policy (confirmed)
+- Root `.gitignore` and package-level gitignores exclude real env files (`.env`, `.env.local`, etc.).  
+- **`.env.example` files are intentionally tracked** so teammates can copy templates.  
+- Prisma generated client under `api-server/src/generated/` is ignored.  
+- Local agent skill folders (`.agents`, `.claude`, `.windsurf`, `.cursor`) are ignored.
 
 ## Production Hosting
 **Not confirmed from available project files.**
@@ -983,7 +1007,7 @@ No other external SaaS integrations confirmed.
 
 # 24. Challenges and Solutions
 
-> Label: Technical challenges inferred from implementation complexity (not from personal diaries/commit narratives beyond `Prototype-version`).
+> Label: Technical challenges inferred from implementation complexity (not from personal diaries/commit narratives beyond early prototype history).
 
 ### Challenge 1: Selecting among conflicting LLM answers
 - **Why difficult:** Models disagree; need automated decision  
@@ -1008,9 +1032,15 @@ No other external SaaS integrations confirmed.
 
 ### Challenge 5: Keeping local AI stack operable
 - **Why difficult:** Depends on Docker Postgres + Ollama models being present  
-- **Solution:** Documented setup in README (compose + model pulls)  
+- **Solution:** Documented setup in README (compose + model pulls + `.env.example`)  
 - **Result:** Reproducible local demo path  
 
+### Challenge 6: PostgreSQL 18 Docker data directory change
+- **Why difficult:** Postgres 18 Docker images expect the volume at `/var/lib/postgresql` (not the older `/var/lib/postgresql/data` layout); upgrading image with the old mount causes container restart loops  
+- **Solution / Approach used:** Compose volume remapped to `/var/lib/postgresql` with a PG18-specific volume name; fresh volume for major-version upgrade  
+- **Technologies involved:** Docker Compose, `postgres:18-alpine`  
+- **Result:** Stable local Postgres 18 with database `Fusion_AI`  
+- **Label:** Technical challenge inferred from implementation complexity / Docker image requirements.
 ---
 
 # 25. Benefits and Impact
@@ -1049,6 +1079,7 @@ Modular Nest services and Prisma migrations support iterative evolution.
 - Client token storage in localStorage (XSS risk classically higher than httpOnly cookies)  
 - Tests outdated relative to current architecture  
 - No confirmed production deployment/monitoring  
+- Major Postgres Docker version upgrades require volume/layout awareness (PG 18 mount path differs from older images)  
 
 ### Potential Technical Limitations
 - Judge adds latency (extra LLM call)  
@@ -1082,22 +1113,28 @@ Modular Nest services and Prisma migrations support iterative evolution.
 ```text
 Fusion-AI/
 ├── README.md                          # System overview & setup
-├── docker-compose.yml                 # Local PostgreSQL
-├── frontend/                          # Next.js UI
+├── .gitignore                         # Root ignore: secrets, builds, generated, agent caches
+├── .env                               # Root Compose secrets (gitignored; create locally)
+├── docker-compose.yml                 # PostgreSQL 18 (Fusion_AI)
+├── PROJECT_DOCUMENTATION_FOR_PPT_AND_REPORT.md
+├── web-client/                          # Next.js UI
 │   ├── package.json
+│   ├── .env.example                   # NEXT_PUBLIC_API_URL (tracked)
+│   ├── .env.local                     # Local overrides (gitignored)
 │   ├── next.config.ts
 │   ├── public/                        # Static assets (default Next SVGs)
 │   └── src/
 │       ├── app/                       # Routes: /, /login, /register
 │       ├── components/                # Sidebar, Chat/*, UI/UpgradeTab
 │       └── lib/api.ts                 # REST client + session helpers
-└── backend/                           # NestJS API
+└── api-server/                           # NestJS API
     ├── package.json
+    ├── .env.example                   # DATABASE_URL, JWT_*, POSTGRES_* templates (tracked)
+    ├── .env                           # Local secrets (gitignored)
     ├── prisma/
-    │   ├── schema.prisma
+    │   ├── schema.prisma              # User, Conversation, Message (no URL in schema)
     │   └── migrations/                # init_auth_and_chats
-    ├── prisma.config.ts
-    ├── .env.example                   # Env var names (no secrets here)
+    ├── prisma.config.ts               # Prisma 7 DATABASE_URL wiring
     ├── test/                          # Outdated e2e scaffold
     └── src/
         ├── main.ts                    # Bootstrap, CORS, ValidationPipe
@@ -1108,11 +1145,11 @@ Fusion-AI/
         ├── judge/                     # Judge selection
         ├── filter/                    # Present, unused in active wiring
         ├── prisma/                    # PrismaService
-        └── generated/prisma/          # Generated client (build artifact)
+        └── generated/prisma/          # Generated client (gitignored build artifact)
 ```
 
-**Intentionally omitted from academic structure dumps:** `node_modules`, build outputs, agent skill caches under `.agents`/`.claude`/`.windsurf` (tooling aids, not product modules).
-
+**Intentionally omitted from academic structure dumps:** `node_modules`, build outputs, agent skill caches under `.agents`/`.claude`/`.windsurf` (tooling aids, not product modules).  
+**Note:** Root `.env` and `api-server/.env` / `web-client/.env.local` must not appear in submissions; only `.env.example` templates.
 ---
 
 # 29. Screenshot Plan
@@ -1133,7 +1170,7 @@ Fusion-AI/
 | 12 | ER diagram | User–Conversation–Message | Data design | Report | Diagram |
 | 13 | Sequence diagram | Chat pipeline | Workflow viva aid | Both | Diagram |
 | 14 | Prisma schema excerpt | Models shown as figure | Implementation evidence | Report | schema screenshot |
-| 15 | Docker Compose running | `fusion-ai-postgres` container | Infra setup | Report | Docker Desktop/terminal |
+| 15 | Docker Compose running | `fusion-ai-postgres` on `postgres:18-alpine`, DB `Fusion_AI` | Infra setup | Report | Docker Desktop/terminal |
 | 16 | Ollama models list | mistral/gemma/llama3 pulled | AI dependency | Report | Terminal `ollama list` |
 | 17 | API tools (optional) | Postman/Insomnia `/chat` with JWT | Backend proof | Report | API client |
 | 18 | UI placeholders callout | Upgrade tab / regenerate icons | Honesty about unfinished UI | Report | `/` annotations |
@@ -1242,11 +1279,10 @@ flowchart TD
 
 ### Slide 7 — Tools & Technologies
 - Next.js, React, Tailwind  
-- NestJS, Prisma, PostgreSQL  
+- NestJS, Prisma, PostgreSQL **18** (`Fusion_AI`)  
 - JWT, bcrypt, Axios  
 - Ollama: mistral, gemma, llama3:8b  
-- Docker Compose  
-
+- Docker Compose + `.env.example` templates
 ### Slide 8 — System Architecture
 - Client–server modular monolith  
 - REST APIs  
@@ -1484,7 +1520,7 @@ Do not invent papers/statistics that are not used by the project.
     3000 (Next dev).
 
 25. **How is Postgres run?**  
-    Docker Compose service `postgres` image `postgres:16-alpine`.
+    Docker Compose service `postgres` image `postgres:18-alpine`, database `Fusion_AI`, configured via root `.env` `POSTGRES_*` variables. Volume mounts at `/var/lib/postgresql` for PG 18 compatibility.
 
 26. **What ORM is used?**  
     Prisma 7 with PostgreSQL adapter.
@@ -1561,6 +1597,14 @@ Do not invent papers/statistics that are not used by the project.
 50. **Is this production-ready?**  
     It is a working prototype for local demonstration; production hardening/deployment not confirmed.
 
+51. **Why is the database called `Fusion_AI`?**  
+    Product name is “Fusion AI”; spaces in DB names break connection URLs, so underscore form is used.
+
+52. **Where is `DATABASE_URL` configured in Prisma 7?**  
+    In `prisma.config.ts` (and `.env`), not inside `datasource` URL in `schema.prisma`.
+
+53. **Which env files are committed?**  
+    `.env.example` templates only. Real `.env` / `.env.local` / root Compose `.env` are gitignored.
 ---
 
 # 35. Glossary
@@ -1583,7 +1627,11 @@ Do not invent papers/statistics that are not used by the project.
 | App Router | Next.js routing system | `/`, `/login`, `/register` |
 | Passport Strategy | Auth validation mechanism | JwtStrategy |
 | ValidationPipe | Nest request validation layer | Global whitelist validation |
-| Prototype | Early working version | Repo commit message indicates prototype |
+| Prototype | Early working version | Repo history indicates prototype origins |
+| Fusion_AI | PostgreSQL database name | Underscore form of product name “Fusion AI” for URL-safe tooling |
+| prisma.config.ts | Prisma 7 project config | Supplies `DATABASE_URL` (URL not in schema.prisma) |
+| .env.example | Tracked env template | Documents required keys without committing personal `.env` |
+| POSTGRES_* | Docker Compose DB env vars | `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` for container bootstrap |
 
 ---
 
@@ -1592,22 +1640,25 @@ Do not invent papers/statistics that are not used by the project.
 | Claim | Evidence |
 |-------|----------|
 | Project name Fusion AI | Root README; frontend layout metadata; Sidebar title |
-| Next.js 16 + React 19 | `frontend/package.json` |
-| Tailwind v4 | `frontend/package.json`, `globals.css` |
-| NestJS 11 backend | `backend/package.json` |
-| Prisma + PostgreSQL | `schema.prisma`, `docker-compose.yml`, PrismaService |
+| Next.js 16 + React 19 | `web-client/package.json` |
+| Tailwind v4 | `web-client/package.json`, `globals.css` |
+| NestJS 11 backend | `api-server/package.json` |
+| Prisma + PostgreSQL 18 | `schema.prisma`, `prisma.config.ts`, `docker-compose.yml` (`postgres:18-alpine`), PrismaService |
+| Database name `Fusion_AI` | `POSTGRES_DB` / `DATABASE_URL` / README |
+| Env templates tracked | `api-server/.env.example`, `web-client/.env.example`; real `.env` gitignored via root + package gitignores |
 | JWT + bcrypt auth | `auth.module.ts`, `auth.service.ts`, `jwt.strategy.ts` |
 | Chat pipeline Multi-LLM + judge | `chat.service.ts`, `llm.service.ts`, `judge.service.ts` |
 | Models mistral/gemma/llama3:8b | llm/judge services + root README |
 | REST API routes | `auth.controller.ts`, `chat.controller.ts`, root README table |
-| Frontend session/API | `frontend/src/lib/api.ts` |
-| Pages login/register/chat | `frontend/src/app/**` |
+| Frontend session/API | `web-client/src/lib/api.ts` |
+| Pages login/register/chat | `web-client/src/app/**` |
 | UI placeholders | `UpgradeTab.tsx`; unhandled buttons in `MessageBubble.tsx` / Sidebar search |
 | Filter unused | Filter module not imported by App/Chat modules; ChatService inline filter only |
 | AppController not active | `app.module.ts` imports only Config/Prisma/Auth/Chat |
 | Tests outdated | `app.controller.spec.ts`, `test/app.e2e-spec.ts` hello-world expectations |
 | No CI workflows | No `.github` workflows found |
-| Local-only infra confirmed | README setup + docker-compose; no deploy configs found |
+| Local-only infra confirmed | README setup + docker-compose PG18; no cloud deploy configs found |
+| PG18 volume mount path | `docker-compose.yml` mounts `fusion_ai_pg18_data` → `/var/lib/postgresql` |
 
 ---
 
@@ -1636,14 +1687,20 @@ Do not invent papers/statistics that are not used by the project.
 - Payment/subscription backend for “Upgrade to Pro”  
 - Official branding assets beyond UI text  
 
+## Previously outdated in this doc (now corrected)
+- ~~PostgreSQL 16 / `fusion_ai` / user `fusion`~~ → **PostgreSQL 18**, database **`Fusion_AI`**, Compose user typically **`postgres`** via `POSTGRES_*`  
+- ~~Schema URL only in older Prisma style~~ → Prisma 7 URL lives in **`prisma.config.ts`**  
+- ~~No root `.gitignore`~~ → Root + package gitignores; **`.env.example` is committed**, real env files are not  
+
 ## Important Accuracy Reminders for PPT/Report
 1. Do **not** claim cloud LLM APIs unless added later.  
 2. Do **not** present Upgrade/Regenerate/Feedback/Search as completed features.  
 3. Do **not** claim comprehensive automated test coverage.  
 4. Do **not** invent accuracy percentage improvements without experiments.  
-5. Clearly state local Ollama + Docker Postgres requirements.  
-6. Never paste secrets from `.env` files into submissions.
-
+5. Clearly state local Ollama + **Docker PostgreSQL 18** (`Fusion_AI`) requirements.  
+6. Never paste secrets from `.env` files into submissions; use `.env.example` key names only.  
+7. Explain that `Fusion_AI` is the technical DB name for product name “Fusion AI”.  
+8. If showing Docker screenshots, use PG 18 / current compose — not older PG 16 docs.
 ---
 
 ## Final Validation Checklist (Documentation Author)
@@ -1656,7 +1713,8 @@ Do not invent papers/statistics that are not used by the project.
 - [x] Architecture diagrams match actual active modules  
 - [x] Future enhancements labeled as suggestions  
 - [x] Personal/college details left as placeholders  
-- [x] Secrets excluded (env **names** only)  
+- [x] Secrets excluded from report narrative (env **names** / encoding notes only; real passwords not documented here)  
+- [x] PostgreSQL version/name/user and gitignore/env.example policy match current repo  
 - [x] Enough material for ~15–20 PPT slides and a 35–60 page report plan  
 
 ---

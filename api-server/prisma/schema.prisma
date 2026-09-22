@@ -1,0 +1,63 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String        @id @default(uuid()) @db.Uuid
+  email        String        @unique
+  passwordHash String
+  name         String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  chatHistories ChatHistory[]
+}
+
+/// A chat session owned by a user (sidebar entry).
+model ChatHistory {
+  id            String         @id @default(uuid()) @db.Uuid
+  title         String
+  userId        String         @db.Uuid
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  conversations Conversation[]
+  responseData  ResponseData[]
+
+  @@index([userId, updatedAt])
+  @@map("chat_history")
+}
+
+/// A single user message turn within a chat session (each prompt gets its own UUID).
+model Conversation {
+  id            String         @id @default(uuid()) @db.Uuid
+  chatHistoryId String         @db.Uuid
+  chatHistory   ChatHistory    @relation(fields: [chatHistoryId], references: [id], onDelete: Cascade)
+  content       String
+  createdAt     DateTime       @default(now())
+  responseData  ResponseData[]
+
+  @@index([chatHistoryId, createdAt])
+  @@map("conversation")
+}
+
+/// AI response linked to a user turn and its chat session.
+model ResponseData {
+  id             String       @id @default(uuid()) @db.Uuid
+  chatHistoryId  String       @db.Uuid
+  conversationId String       @db.Uuid
+  chatHistory    ChatHistory  @relation(fields: [chatHistoryId], references: [id], onDelete: Cascade)
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  content        String
+  selectedBy     String?
+  createdAt      DateTime     @default(now())
+
+  @@index([chatHistoryId, createdAt])
+  @@index([conversationId, createdAt])
+  @@map("response_data")
+}

@@ -31,14 +31,14 @@ The Fusion AI system follows a sophisticated pipeline to deliver the highest qua
 
 ## �🛠 Tech Stack
 
-### Frontend (`/frontend`)
+### Frontend (`/web-client`)
 - **Framework**: [Next.js 16 (App Router)](https://nextjs.org/)
 - **Language**: [TypeScript](https://www.typescriptlang.org/)
 - **Styling**: [Tailwind CSS v4](https://tailwindcss.com/)
 - **Icons**: [Lucide React](https://lucide.dev/)
 - **Package Manager**: NPM
 
-### Backend (`/backend`)
+### Backend (`/api-server`)
 - **Framework**: [NestJS 11](https://nestjs.com/)
 - **Language**: [TypeScript](https://www.typescriptlang.org/)
 - **ORM / DB**: Prisma + PostgreSQL
@@ -58,8 +58,8 @@ The project is organized into two main distinct directories:
 
 ```
 fusion-ai/
-├── frontend/           # Next.js Frontend Application
-├── backend/            # NestJS Backend Service
+├── web-client/         # Next.js Frontend Application
+├── api-server/         # NestJS Backend Service
 └── docker-compose.yml  # PostgreSQL
 ```
 
@@ -83,13 +83,13 @@ ollama pull llama3:8b
 ollama pull mistral
 ollama pull gemma
 ```
-> **Note**: You can customize the models used by modifying `backend/src/llm/llm.service.ts` and `backend/src/judge/judge.service.ts`.
+> **Note**: You can customize the models used by modifying `api-server/src/llm/llm.service.ts` and `api-server/src/judge/judge.service.ts`.
 
 ---
 
 ## 🐘 PostgreSQL Setup
 
-From the project root, create a `.env` (see `backend/.env.example` for `POSTGRES_*` keys), then:
+From the project root, create a `.env` (see `api-server/.env.example` for `POSTGRES_*` keys), then:
 
 ```bash
 docker compose up -d
@@ -98,7 +98,7 @@ docker compose up -d
 This starts **PostgreSQL 18** on `localhost:5432`. Default local values (override via root `.env`):
 - user: `postgres`
 - database: `Fusion_AI` (underscore form of “Fusion AI”; spaces break connection URLs)
-- Set `POSTGRES_PASSWORD` in the root `.env` and matching URL-encoded password in `backend/.env` `DATABASE_URL`
+- Set `POSTGRES_PASSWORD` in the root `.env` and matching URL-encoded password in `api-server/.env` `DATABASE_URL`
 
 ---
 
@@ -116,7 +116,7 @@ To run the Fusion AI project locally, you will need Postgres, Ollama, backend, a
 The backend runs on port `3333`.
 
 ```bash
-cd backend
+cd api-server
 cp .env.example .env
 yarn install
 npx prisma migrate dev
@@ -128,7 +128,7 @@ yarn run start:dev
 The frontend runs on port `3000` and connects to the backend.
 
 ```bash
-cd frontend
+cd web-client
 cp .env.example .env.local   # optional
 npm install                  # or yarn
 npm run dev
